@@ -37,6 +37,7 @@ export default function Home() {
     <div className="flex h-screen bg-gray-900 text-white">
       
       {/* LEFT SIDE: PDF Viewer (Now Isolated) */}
+      
       <div className="w-3/4 h-full border-r border-gray-700 bg-white text-black">
         <PDFViewer fileUrl="/sample.pdf" />
       </div>
