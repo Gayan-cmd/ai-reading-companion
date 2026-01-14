@@ -1,0 +1,16 @@
+# Secrets (NEVER UPLOAD THESE)
+.env
+.env.local
+
+# Massive Dependency Folders
+node_modules/
+venv/
+.venv/
+__pycache__/
+
+# Build Files
+.next/
+dist/
+build/
+*.pyc
+.DS_Store
