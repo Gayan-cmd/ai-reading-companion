@@ -1,17 +1,33 @@
 # backend/main.py
-from fastapi import FastAPI, HTTPException
+from datetime import timedelta
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+from contextlib import asynccontextmanager
+from database import create_db_and_tables
+from auth import create_access_token, get_password_hash, verify_password
+from models import User, UserCreate
+from database import get_session
+from sqlmodel import Session,select
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+
 
 # 1. Load Secrets
 # Create a .env file later, or sets it in terminal. 
 # For now, ensure your API key is ready.
 load_dotenv()
 api_key = os.getenv("GOOGLE_API_KEY")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # This runs BEFORE the app starts
+    create_db_and_tables() 
+    yield
+    # Anything after 'yield' would run when the app shuts down
 
 # Check if key exists
 if not api_key:
@@ -20,7 +36,7 @@ if not api_key:
 client = genai.Client(api_key=api_key)
 
 # 2. Initialize the App
-app = FastAPI(title="AI Reading Companion API")
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -78,3 +94,48 @@ async def explain_text(request: ExplanationRequest):
     except Exception as e:
         # If anything breaks, tell the frontend what happened
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+@app.post("/register")
+def register_user(user_data:UserCreate,session:Session=Depends(get_session)):
+    statement1 = select(User).where(User.username==user_data.username)
+    result1= session.exec(statement1)   
+    user1 = result1.first()
+    statement = select(User).where(User.email==user_data.email)
+    result= session.exec(statement)   
+    user = result.first()
+    if user:
+        raise HTTPException(status_code=400,detail="Email already registered")
+    if user1:
+        raise HTTPException(status_code=400,detail="Username already taken Try another one")
+    hashed_password = get_password_hash(user_data.password)
+    
+    new_user = User(email=user_data.email,username=user_data.username,hashed_password=hashed_password)
+    session.add(new_user)
+    session.commit()
+    session.refresh(new_user)
+    message = {"message": "User Created successfully"}
+    return message
+
+@app.post("/token")
+def login_for_access_token(form_data: OAuth2PasswordRequestForm=Depends(),session: Session=Depends(get_session)):
+    
+    statement = select(User).where(User.username==form_data.username)
+    result=session.exec(statement)
+    user =result.first()
+    
+    if not user or not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=401, # 401 = Unauthorized
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    access_token = create_access_token(data={"sub": user.username}, expires_delta=timedelta(minutes=30))
+    
+    return {"access_token":access_token,"token_type":"bearer"}
+    
+    
+    
+
+    

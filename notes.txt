@@ -1,0 +1,5 @@
+sqlmodel: Interacts with the database.
+
+passlib: Hashes passwords (so we never store plain text passwords like "123456").
+
+python-jose: Generates JWTs (JSON Web Tokens) – the "ID Card" the user carries after logging in.
