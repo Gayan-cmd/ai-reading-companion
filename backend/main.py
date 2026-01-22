@@ -1,6 +1,6 @@
 # backend/main.py
 from datetime import timedelta
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends,BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
@@ -14,6 +14,8 @@ from models import User, UserCreate
 from database import get_session
 from sqlmodel import Session,select
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from emails import send_verification_email
+from jose import ExpiredSignatureError, JWTError, jwt
 
 
 # 1. Load Secrets
@@ -21,6 +23,8 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 # For now, ensure your API key is ready.
 load_dotenv()
 api_key = os.getenv("GOOGLE_API_KEY")
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = os.getenv("ALGORITHM")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -97,7 +101,7 @@ async def explain_text(request: ExplanationRequest):
     
 
 @app.post("/register")
-def register_user(user_data:UserCreate,session:Session=Depends(get_session)):
+def register_user(user_data:UserCreate,background_tasks:BackgroundTasks,session:Session=Depends(get_session)):
     statement1 = select(User).where(User.username==user_data.username)
     result1= session.exec(statement1)   
     user1 = result1.first()
@@ -114,7 +118,12 @@ def register_user(user_data:UserCreate,session:Session=Depends(get_session)):
     session.add(new_user)
     session.commit()
     session.refresh(new_user)
-    message = {"message": "User Created successfully"}
+    
+    verify_token = create_access_token(data={"sub":new_user.username},expires_delta=timedelta(hours=24))
+    background_tasks.add_task(send_verification_email,new_user.email,verify_token)
+    
+    message = {"message": "User Created successfully. Please check your email to verify"}
+
     return message
 
 @app.post("/token")
@@ -130,12 +139,53 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm=Depends(),sessio
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+        
+    if not user.is_verified:
+       raise HTTPException(status_code=400, detail="Please verify your email address before logging in.")
     
     access_token = create_access_token(data={"sub": user.username}, expires_delta=timedelta(minutes=30))
     
     return {"access_token":access_token,"token_type":"bearer"}
     
     
+@app.get("/verify")
+def verify_email(token:str,session:Session=Depends(get_session)):
+    try:
+        payload = jwt.decode(token,SECRET_KEY,algorithms=[ALGORITHM])
+        username = payload.get("sub")
+        
+        statement = select(User).where(User.username==username)
+        result=session.exec(statement)
+        user =result.first()
+        
+        if not user:
+            raise HTTPException(
+                status_code=400,
+                detail="User not found"
+            )
+            
+        if user.is_verified:
+            return {"message":"User already verified"}
+        
+        user.is_verified = True
+        session.add(user)
+        session.commit()
+        session.refresh(user)
+        
+        return {"message": "Email verified successfully! You can now log in."}
+        
+    except JWTError,ExpiredSignatureError :
+        raise HTTPException(
+            status_code=400,
+            detail= "Invalid or Expired Token"
+
+        )
+        
+
+    
+    
+    
+
     
 
     
