@@ -26,6 +26,32 @@ api_key = os.getenv("GOOGLE_API_KEY")
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
 
+
+oauth_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+def get_current_user(token:str=Depends(oauth_scheme),session:Session=Depends(get_session)):
+    creadential_exeption = HTTPException(
+        status_code=401,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate":"Bearer"},
+    )
+    try:
+        payload = jwt.decode(token,SECRET_KEY,algorithms=[ALGORITHM])
+        username:str =payload.get("sub")
+        if username is None:
+            raise creadential_exeption
+    except JWTError:
+        raise creadential_exeption
+    
+    statement = select(User).where(User.username==username)
+    result = session.exec(statement)
+    user = result.first()
+    
+    if user is None:
+        raise creadential_exeption
+    
+    return user
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # This runs BEFORE the app starts
@@ -55,8 +81,8 @@ app.add_middleware(
 # This acts like a "Security Guard". It checks that the data 
 # sent from the frontend matches EXACTLY this structure.
 class ExplanationRequest(BaseModel):
-    selected_text: str
-    page_context: str # The full text of the page for context
+    context: str
+    question: str 
 
 # 4. The Health Check Route
 # Used to verify the server is running.
@@ -75,10 +101,10 @@ async def explain_text(request: ExplanationRequest):
         You are an expert Reading Tutor.
         
         CONTEXT (The user is reading this page):
-        "{request.page_context}"
+        "{request.context}"
         
         USER QUESTION:
-        Please explain this specific text from the page: "{request.selected_text}"
+        Please answer this specific Question based on the context: "{request.question}"
         
         INSTRUCTIONS:
         1. Explain the meaning clearly.
@@ -182,7 +208,9 @@ def verify_email(token:str,session:Session=Depends(get_session)):
         )
         
 
-    
+@app.get("/users/me", response_model=User)
+def read_users_me(current_user: User = Depends(get_current_user)):
+    return current_user
     
     
 

@@ -1,28 +1,35 @@
-// frontend/src/lib/api.js
 
-// This is the address of your Python Backend
-const BACKEND_URL = "http://127.0.0.1:8000"; 
+const BASE_URL = "http://127.0.0.1:8000"; 
 
-export async function askAI(selectedText, pageContext) {
+export async function askAI(question, context) {
   try {
-    // We send a POST request (like mailing a letter) to the backend
-    const response = await fetch(`${BACKEND_URL}/explain`, {
+
+    const token = localStorage.getItem("access_token");
+    const response = await fetch(`${BASE_URL}/explain`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
       },
-      // We package our data into JSON format
+    
       body: JSON.stringify({
-        selected_text: selectedText,
-        page_context: pageContext,
+        question: question,
+        context: context,
       }),
     });
 
+    if (response.status === 401) {
+      throw new Error("Unauthorized: Please log in.");
+    }
+
+    
+
     if (!response.ok) {
+      const error = await response.json();
+      console.log("API Error Response:", error.detail);
       throw new Error("Failed to talk to AI");
     }
 
-    // We wait for the answer and unbox it
     const data = await response.json();
     return data.explanation;
     
@@ -31,3 +38,33 @@ export async function askAI(selectedText, pageContext) {
     return "Error: Could not connect to the AI brain. Is the backend running?";
   }
 }
+
+
+export async function login_user(username, password) {
+
+  const formData = new URLSearchParams();
+  formData.append("username", username);
+  formData.append("password",password)
+
+  const response = await fetch(`${BASE_URL}/token`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: formData,
+    
+  });
+
+  if (!response.ok) { 
+    const errorData = await response.json().catch(() => ({}));
+    console.log(errorData.detail);
+    throw new Error("Login failed");
+  
+  }
+
+  return response.json();
+  
+}
+
+
+

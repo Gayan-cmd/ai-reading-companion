@@ -1,10 +1,9 @@
 "use client";
-
-
 import { useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { askAI } from "./lib/api";
 import { Send, Bot, User, Sparkles, Square } from 'lucide-react';
+import { useRouter } from "next/navigation";
 
 const PDFViewer = dynamic(() => import("./components/PDFViewer"), {
   ssr: false,
@@ -16,6 +15,16 @@ export default function Home() {
   const [history, setHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [pageContext, setPageContext] = useState("");
+
+  const router = useRouter();
+
+  useEffect(() => { 
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      router.push('/login');
+    }
+  },[router]);
+
 
   const messagesEndRef = useRef(null);
 
@@ -87,20 +96,19 @@ export default function Home() {
 
 
     try {
-      // 2. Get the full answer from the backend (Wait for it...)
+    
       const contextToSend = pageContext || "Context not found.";
       const answer = await askAI(question, contextToSend);
 
-      // 3. Turn off loading (The "Thinking..." bubble disappears)
       setIsLoading(false);
-
-      // 4. Start the Typewriter Effect!
+  
       await simulateStreaming(answer);
 
+      
     } catch (error) {
       console.error("Failed to fetch AI response:", error);
       setIsLoading(false);
-      // Optional: Add an error message to chat if it fails
+      setIsTyping(false);
       setHistory(prev => [...prev, { role: "ai", text: "Sorry, something went wrong." }]);
     }
   };
@@ -192,7 +200,8 @@ export default function Home() {
               onChange={(e) => setQuestion(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
               placeholder="Type your question..."
-              className="w-full bg-gray-800 text-white pl-4 pr-12 py-3 rounded-xl border border-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-inner"
+              disabled={isLoading || isTyping}
+              className="w-full bg-gray-800 text-white pl-4 pr-12 py-3 rounded-xl border border-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-inner diabled:opacity-50"
             />
             {isTyping ? (
               <button
