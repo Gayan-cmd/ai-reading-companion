@@ -67,4 +67,26 @@ export async function login_user(username, password) {
 }
 
 
+export async function fetch_current_user() {
+  const token = localStorage.getItem("access_token");
 
+  if (!token) { 
+    return null;
+  }
+
+  const response = await fetch(`${BASE_URL}/users/me`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    }
+    
+  });
+
+  if (!response.ok) { 
+    throw new Error("Failed to fetch user");
+
+  }
+
+  return response.json();
+}

@@ -10,7 +10,7 @@ from google.genai import types
 from contextlib import asynccontextmanager
 from database import create_db_and_tables
 from auth import create_access_token, get_password_hash, verify_password
-from models import User, UserCreate
+from models import User, UserCreate,UserRead
 from database import get_session
 from sqlmodel import Session,select
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -208,7 +208,7 @@ def verify_email(token:str,session:Session=Depends(get_session)):
         )
         
 
-@app.get("/users/me", response_model=User)
+@app.get("/users/me", response_model=UserRead)
 def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
     

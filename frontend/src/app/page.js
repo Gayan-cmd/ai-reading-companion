@@ -1,29 +1,46 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { askAI } from "./lib/api";
+import { askAI, fetch_current_user } from "./lib/api";
 import { Send, Bot, User, Sparkles, Square } from 'lucide-react';
 import { useRouter } from "next/navigation";
+import UserMenu from "./components/UserMenu";
 
 const PDFViewer = dynamic(() => import("./components/PDFViewer"), {
   ssr: false,
   loading: () => <div className="p-10 text-black">Loading PDF Engine...</div>,
 });
 
+
+
 export default function Home() {
   const [question, setQuestion] = useState("");
   const [history, setHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [pageContext, setPageContext] = useState("");
+  const [user, setUser] = useState(null);
 
   const router = useRouter();
 
-  useEffect(() => { 
+  useEffect(() => {
     const token = localStorage.getItem("access_token");
     if (!token) {
       router.push('/login');
+      return;
     }
-  },[router]);
+
+    const loadUser = async () => {
+      try {
+        const userData = await fetch_current_user();
+        setUser(userData);
+      } catch (error) {
+        console.error("Failed to fetch user:", error);
+        router.push('/login');
+      }
+    };
+    loadUser();
+
+  }, [router]);
 
 
   const messagesEndRef = useRef(null);
@@ -96,15 +113,15 @@ export default function Home() {
 
 
     try {
-    
+
       const contextToSend = pageContext || "Context not found.";
       const answer = await askAI(question, contextToSend);
 
       setIsLoading(false);
-  
+
       await simulateStreaming(answer);
 
-      
+
     } catch (error) {
       console.error("Failed to fetch AI response:", error);
       setIsLoading(false);
@@ -134,9 +151,13 @@ export default function Home() {
 
         {/* A. HEADER */}
         <div className="p-4 border-b border-gray-800 bg-gray-900 shadow-sm flex flex-col gap-1">
-          <div className="flex items-center gap-2 text-blue-400">
-            <Sparkles size={18} />
-            <h2 className="font-bold text-lg tracking-wide">AI Assistant</h2>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-blue-400">
+              <Sparkles size={18} />
+              <h2 className="font-bold text-lg tracking-wide">AI Assistant</h2>
+            </div>
+            {/* User Menu - Top Right */}
+            <UserMenu user={user} />
           </div>
           {/* Status Indicator */}
           <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -201,7 +222,7 @@ export default function Home() {
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
               placeholder="Type your question..."
               disabled={isLoading || isTyping}
-              className="w-full bg-gray-800 text-white pl-4 pr-12 py-3 rounded-xl border border-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-inner diabled:opacity-50"
+              className="w-full bg-gray-800 text-white pl-4 pr-12 py-3 rounded-xl border border-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-inner disabled:opacity-50"
             />
             {isTyping ? (
               <button
