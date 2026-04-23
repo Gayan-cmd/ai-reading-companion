@@ -48,35 +48,43 @@ export default function Home() {
   const [isTyping, setIsTyping] = useState(false); // Are we currently streaming text?
   const stopTypingRef = useRef(false); // The "Emergency Brake"
   const chatContainerRef = useRef(null); // To measure scroll position
+  const userScrolledUp = useRef(false); // True when user has scrolled away from bottom
 
-  // 2. Automatically scroll to it whenever 'history' or 'isLoading' changes
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const handleStop = () => {
-    stopTypingRef.current = true; // Pull the brake
+    stopTypingRef.current = true;
   };
 
+  // Track whether the user has manually scrolled up
   useEffect(() => {
-    scrollToBottom();
-  }, [isLoading]);
+    const container = chatContainerRef.current;
+    if (!container) return;
 
-  // --- NEW FUNCTION: TYPEWRITER EFFECT ---
+    const onScroll = () => {
+      const distFromBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight;
+      // If more than 80px from the bottom, the user intentionally scrolled up
+      userScrolledUp.current = distFromBottom > 80;
+    };
+
+    container.addEventListener("scroll", onScroll);
+    return () => container.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // --- TYPEWRITER EFFECT ---
   const simulateStreaming = async (fullText) => {
     setHistory(prev => [...prev, { role: "ai", text: "" }]);
 
-    // Reset the "Brake" before starting
     stopTypingRef.current = false;
     setIsTyping(true);
 
     let currentText = "";
 
     for (let i = 0; i < fullText.length; i++) {
-      // 1. CHECK THE BRAKE: If user clicked Stop, break the loop
-      if (stopTypingRef.current) {
-        break;
-      }
+      if (stopTypingRef.current) break;
 
       currentText += fullText[i];
 
@@ -86,25 +94,23 @@ export default function Home() {
         return newHistory;
       });
 
-      // 2. SMART SCROLL LOGIC
-      // Only scroll to bottom if the user is ALREADY near the bottom.
-      // If they scrolled up to read history, don't disturb them.
-      const container = chatContainerRef.current;
-      if (container) {
-        const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
-        if (isNearBottom) {
-          messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-        }
+      // Only auto-scroll if the user hasn't scrolled away
+      if (!userScrolledUp.current) {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
       }
 
       await new Promise(resolve => setTimeout(resolve, 15));
     }
 
-    setIsTyping(false); // Streaming finished
+    setIsTyping(false);
   };
 
   const handleSend = async () => {
     if (!question.trim()) return;
+
+    // Reset scroll flag and jump to bottom for the new user message
+    userScrolledUp.current = false;
+    scrollToBottom();
 
     const newHistory = [...history, { role: "user", text: question }];
     setHistory(newHistory);

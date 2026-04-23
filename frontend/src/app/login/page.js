@@ -1,31 +1,36 @@
 "use client";
-import { useState,useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { login_user } from '../lib/api';
 import { useRouter } from 'next/navigation';
+import Popup from '../components/Popup';
+import Link from "next/link";
 
-export default function Login({}) {
+export default function Login({ }) {
     const router = useRouter();
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState(null);
+    const [success_message, setSuccessMessage] = useState(null);
+    const [showPopup, setShowPopup] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsLoading(true);
-        setError(null);
+
 
         try {
-            const data = await login_user(username, password);
-            localStorage.setItem("access_token", data.access_token);
+            await login_user(username, password); // tokens stored inside login_user
+            setSuccessMessage("Login Successful! Redirecting...");
+            setShowPopup(true);
             router.push('/');
-            
+
         }
 
         catch (error) {
-            seterror("Login Failed: Please Check Your Credentials.");
-
+            setError("Login Failed: Please Check Your Credentials.");
+            setShowPopup(true);
         } finally {
             setIsLoading(false);
 
@@ -35,6 +40,22 @@ export default function Login({}) {
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100">
+            {/* Popup Component */}
+            <Popup
+                message={error}
+                type="error"
+                isVisible={showPopup}
+                onClose={() => setShowPopup(false)}
+            />
+
+            <Popup
+                message={success_message}
+                type="success"
+                isVisible={showPopup}
+                onClose={() => setShowPopup(false)}
+            />
+
+
             <div className="p-8 bg-white rounded shadow-md">
                 <h2 className="text-2xl font-bold mb-4 text-center text-black">Login</h2>
 
@@ -65,11 +86,18 @@ export default function Login({}) {
                     >
                         {isLoading ? "Signing in..." : "Sign In"}
                     </button>
+
+                    <div className="mt-4 text-center">
+                        <p className="text-sm text-gray-600">
+                            Don't have an account?{" "}
+                            <Link href="/register" className="text-blue-600 hover:underline">
+                                Sign up
+                            </Link>
+                        </p>
+                    </div>
+
                 </form>
             </div>
         </div>
     );
-
-
-
 }

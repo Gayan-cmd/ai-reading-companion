@@ -9,7 +9,7 @@ from google import genai
 from google.genai import types
 from contextlib import asynccontextmanager
 from database import create_db_and_tables
-from auth import create_access_token, get_password_hash, verify_password
+from auth import create_access_token, create_refresh_token, get_password_hash, verify_password
 from models import User, UserCreate,UserRead
 from database import get_session
 from sqlmodel import Session,select
@@ -170,8 +170,42 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm=Depends(),sessio
        raise HTTPException(status_code=400, detail="Please verify your email address before logging in.")
     
     access_token = create_access_token(data={"sub": user.username}, expires_delta=timedelta(minutes=30))
+    refresh_token = create_refresh_token(data={"sub": user.username}, expires_delta=timedelta(days=7))
     
-    return {"access_token":access_token,"token_type":"bearer"}
+    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+@app.post("/refresh")
+def refresh_access_token(request: RefreshRequest, session: Session = Depends(get_session)):
+    credential_exception = HTTPException(
+        status_code=401,
+        detail="Invalid or expired refresh token",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(request.refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("type") != "refresh":
+            raise credential_exception
+        username: str = payload.get("sub")
+        if username is None:
+            raise credential_exception
+    except JWTError:
+        raise credential_exception
+
+    statement = select(User).where(User.username == username)
+    result = session.exec(statement)
+    user = result.first()
+
+    if user is None:
+        raise credential_exception
+
+    new_access_token = create_access_token(
+        data={"sub": user.username}, expires_delta=timedelta(minutes=30)
+    )
+    return {"access_token": new_access_token, "token_type": "bearer"}
     
     
 @app.get("/verify")
