@@ -48,15 +48,15 @@ export default function PDFViewer({ fileUrl, onPageChange }) {
     const zoomOut = () => setScale((prev) => Math.max(prev - 0.2, 0.6));
 
     return (
-        <div className="flex flex-col h-full bg-white text-gray-900 border-r border-gray-200">
+        <div className="flex flex-col h-full bg-gray-900 text-white border-r border-gray-700">
             
             {/* --- TOOLBAR --- */}
-            <div className="flex items-center justify-between p-3 bg-gray-50 border-b border-gray-200 shadow-md">
+            <div className="flex items-center justify-between p-3 bg-gray-800 border-b border-gray-700 shadow-md">
                 
-                {/* 1. Page Counter (Light Style) */}
-                <div className="flex items-center gap-2 bg-white px-3 py-1 rounded-md border border-gray-300">
-                    <span className="text-sm font-mono text-gray-700">
-                        Page <span className="text-gray-900 font-bold">{pageNumber}</span> / {numPages || "--"}
+                {/* 1. Page Counter (Dark Style) */}
+                <div className="flex items-center gap-2 bg-gray-900 px-3 py-1 rounded-md border border-gray-700">
+                    <span className="text-sm font-mono text-gray-300">
+                        Page <span className="text-white font-bold">{pageNumber}</span> / {numPages || "--"}
                     </span>
                 </div>
 
@@ -65,7 +65,7 @@ export default function PDFViewer({ fileUrl, onPageChange }) {
                     <button 
                         onClick={goToPrevPage} 
                         disabled={pageNumber <= 1}
-                        className="p-2 rounded-md hover:bg-gray-200 disabled:opacity-30 transition-colors text-gray-700"
+                        className="p-2 rounded-md hover:bg-gray-700 disabled:opacity-30 transition-colors"
                         title="Previous Page"
                     >
                         {/* We use the Icon component instead of text */}
@@ -74,7 +74,7 @@ export default function PDFViewer({ fileUrl, onPageChange }) {
                     <button 
                         onClick={goToNextPage} 
                         disabled={pageNumber >= numPages}
-                        className="p-2 rounded-md hover:bg-gray-200 disabled:opacity-30 transition-colors text-gray-700"
+                        className="p-2 rounded-md hover:bg-gray-700 disabled:opacity-30 transition-colors"
                         title="Next Page"
                     >
                         <ChevronRight size={20} />
@@ -83,31 +83,31 @@ export default function PDFViewer({ fileUrl, onPageChange }) {
 
                 {/* 3. Zoom Controls */}
                 <div className="flex items-center gap-2">
-                    <button onClick={zoomOut} className="p-2 rounded-md hover:bg-gray-200 transition-colors text-gray-700">
+                    <button onClick={zoomOut} className="p-2 rounded-md hover:bg-gray-700 transition-colors">
                         <ZoomOut size={18} />
                     </button>
-                    <span className="text-xs text-gray-600 w-10 text-center">
+                    <span className="text-xs text-gray-400 w-10 text-center">
                         {Math.round(scale * 100)}%
                     </span>
-                    <button onClick={zoomIn} className="p-2 rounded-md hover:bg-gray-200 transition-colors text-gray-700">
+                    <button onClick={zoomIn} className="p-2 rounded-md hover:bg-gray-700 transition-colors">
                         <ZoomIn size={18} />
                     </button>
                 </div>
             </div>
 
             {/* --- PDF AREA --- */}
-            <div className="flex-1 overflow-auto flex justify-center p-8 bg-gray-50">
+            <div className="flex-1 overflow-auto flex justify-center p-8 bg-gray-900/50">
                 
                 {/* Show error if PDF failed to load */}
                 {error && (
-                    <div className="flex items-center gap-2 text-red-600 mt-20">
+                    <div className="flex items-center gap-2 text-red-400 mt-20">
                         <span className="font-semibold">{error}</span>
                     </div>
                 )}
 
                 {/* Show Spinner if loading and no error */}
                 {loading && !error && (
-                    <div className="flex items-center gap-2 text-gray-600 mt-20">
+                    <div className="flex items-center gap-2 text-gray-400 mt-20">
                         <Loader2 className="animate-spin" /> Loading PDF...
                     </div>
                 )}
@@ -127,7 +127,7 @@ export default function PDFViewer({ fileUrl, onPageChange }) {
                             onLoadSuccess={onPageLoadSuccess}
                             renderTextLayer={true} 
                             renderAnnotationLayer={false}
-                            className="border border-gray-300"
+                            className="border border-gray-700"
                         />
                     </Document>
                 )}

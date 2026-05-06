@@ -8,7 +8,7 @@ import UserMenu from "./components/UserMenu";
 
 const PDFViewer = dynamic(() => import("./components/PDFViewer"), {
   ssr: false,
-  loading: () => <div className="p-10 text-gray-900">Loading PDF Engine...</div>,
+  loading: () => <div className="p-10 text-black">Loading PDF Engine...</div>,
 });
 
 
@@ -137,9 +137,9 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 text-gray-900">
+    <div className="flex h-screen bg-gray-900 text-white">
       {/* LEFT: PDF Viewer */}
-      <div className="w-3/4 h-full border-r border-gray-200 bg-white text-black">
+      <div className="w-3/4 h-full border-r border-gray-700 bg-white text-black">
         {/* CONCEPT: callback prop
             'onPageChange' is the name of the prop we defined in the Child.
             'setPageContext' is the function we want the Child to call.
@@ -153,12 +153,12 @@ export default function Home() {
 
 
       {/* RIGHT: Chat Interface */}
-      <div className="w-1/4 flex flex-col h-full bg-white border-l border-gray-200">
+      <div className="w-1/4 flex flex-col h-full bg-gray-900 border-l border-gray-700">
 
         {/* A. HEADER */}
-        <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50 shadow-sm flex flex-col gap-1">
+        <div className="p-4 border-b border-gray-800 bg-gray-900 shadow-sm flex flex-col gap-1">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-blue-600">
+            <div className="flex items-center gap-2 text-blue-400">
               <Sparkles size={18} />
               <h2 className="font-bold text-lg tracking-wide">AI Assistant</h2>
             </div>
@@ -166,34 +166,34 @@ export default function Home() {
             <UserMenu user={user} />
           </div>
           {/* Status Indicator */}
-          <div className="flex items-center gap-2 text-xs text-gray-600">
+          <div className="flex items-center gap-2 text-xs text-gray-500">
             <div className={`w-2 h-2 rounded-full ${pageContext ? "bg-green-500" : "bg-red-500"}`}></div>
             {pageContext ? "Reading Page Context" : "No Context Detected"}
           </div>
         </div>
 
         {/* B. MESSAGES AREA */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-gray-50"
+        <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-gray-900/50"
           ref={chatContainerRef}
         >
           {history.length === 0 && (
-            <div className="text-center mt-20 opacity-40">
-              <Bot size={48} className="mx-auto mb-3 text-gray-400" />
-              <p className="text-gray-500">Ask me anything about this page!</p>
+            <div className="text-center mt-20 opacity-30">
+              <Bot size={48} className="mx-auto mb-3" />
+              <p>Ask me anything about this page!</p>
             </div>
           )}
 
           {history.map((msg, index) => (
             <div key={index} className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
               {/* Avatar Icon */}
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === "user" ? "bg-blue-500" : "bg-purple-500"}`}>
-                {msg.role === "user" ? <User size={16} className="text-white" /> : <Bot size={16} className="text-white" />}
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === "user" ? "bg-blue-600" : "bg-purple-600"}`}>
+                {msg.role === "user" ? <User size={16} /> : <Bot size={16} />}
               </div>
 
               {/* Message Bubble */}
-              <div className={`p-3 max-w-[85%] text-sm leading-relaxed shadow-sm ${msg.role === "user"
-                ? "bg-blue-100 text-blue-900 rounded-2xl rounded-tr-sm" // User Bubble style
-                : "bg-gray-100 text-gray-900 rounded-2xl rounded-tl-sm border border-gray-200" // AI Bubble style
+              <div className={`p-3 max-w-[85%] text-sm leading-relaxed shadow-md ${msg.role === "user"
+                ? "bg-blue-600 text-white rounded-2xl rounded-tr-sm" // User Bubble style
+                : "bg-gray-800 text-gray-100 rounded-2xl rounded-tl-sm border border-gray-700" // AI Bubble style
                 }`}>
                 {msg.text}
               </div>
@@ -203,10 +203,10 @@ export default function Home() {
           {/* Loading Animation Bubble */}
           {isLoading && (
             <div className="flex gap-3">
-              <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center shrink-0">
-                <Bot size={16} className="text-white" />
+              <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center shrink-0">
+                <Bot size={16} />
               </div>
-              <div className="bg-gray-100 border border-gray-200 p-4 rounded-2xl rounded-tl-sm flex gap-1 items-center">
+              <div className="bg-gray-800 border border-gray-700 p-4 rounded-2xl rounded-tl-sm flex gap-1 items-center">
                 <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
                 <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></span>
                 <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></span>
@@ -219,7 +219,7 @@ export default function Home() {
         </div>
 
         {/* C. INPUT AREA */}
-        <div className="p-4 bg-white border-t border-gray-200">
+        <div className="p-4 bg-gray-900 border-t border-gray-800">
           <div className="relative flex items-center">
             <input
               type="text"
@@ -228,7 +228,7 @@ export default function Home() {
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
               placeholder="Type your question..."
               disabled={isLoading || isTyping}
-              className="w-full bg-gray-100 text-gray-900 pl-4 pr-12 py-3 rounded-xl border border-gray-300 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-inner disabled:opacity-50 placeholder-gray-500"
+              className="w-full bg-gray-800 text-white pl-4 pr-12 py-3 rounded-xl border border-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-inner disabled:opacity-50"
             />
             {isTyping ? (
               <button
